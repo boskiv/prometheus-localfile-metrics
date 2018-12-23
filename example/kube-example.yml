@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sampleapp
+  namespace: example
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: app
+        service: stats
+      namespace: example
+    spec:
+      volumes:
+        - name: metrics-data
+          emptyDir: {}
+      containers:
+        - name: yourcontainer
+          image: alpine
+          command: ["/bin/sh"]
+          args: ["-c", "mkdir -p /app/stats;  while true; do sleep 2; shuf -i 1-100 -n 1 > /app/stats/check; cat /app/stats/check; done"] 
+          volumeMounts:
+          - mountPath: /app/stats
+            name: metrics-data
+        - name: stats
+          image: boskiv/prometheus-localfile-metrics
+          env:
+          - name: PLM_STATS_PATH
+            value: "/app/stats"
+          - name: PLM_STATS_PREFIX
+            value: "myapp"
+          volumeMounts:
+          - mountPath: /app/stats
+            name: metrics-data
+          ports:
+          - containerPort: 9102
+            name: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-service
+  namespace: example
+  labels:
+    app: sample-service
+    prometheus: kube-prometheus
+spec:
+  ports:
+    - port: 9102
+      targetPort: 9102
+      protocol: TCP
+      name: metrics
+  selector:
+    app: app
+    service: stats
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: sample-exporter
+    prometheus: kube-prometheus
+  name: sample-service-monitor
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 15s
+    port: metrics
+  selector:
+    matchLabels:
+      app: sample-service
+      prometheus: kube-prometheus
+  namespaceSelector:
+    matchNames:
+    - example

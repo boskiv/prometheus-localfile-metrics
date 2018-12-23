@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,9 +13,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"github.com/toorop/gin-logrus"
 )
 
 var config *viper.Viper
+var log = logrus.New()
 
 func check(e error) {
 	if e != nil {
@@ -26,8 +28,10 @@ func check(e error) {
 }
 
 func main() {
-	log.SetLevel(log.InfoLevel)
-	router := gin.Default()
+	log.SetLevel(logrus.DebugLevel)
+	router := gin.New()
+	router.Use(ginlogrus.Logger(log), gin.Recovery())
+
 	config = viper.New()
 	if os.Getenv("PLM_STATS_PATH") == "" {
 		log.Info("env PLM_STATS_PATH is not set, using default")
@@ -38,7 +42,7 @@ func main() {
 
 		err = os.Setenv("PLM_STATS_PATH", path.Join(dir, "stats"))
 		if err != nil { // Handle errors reading the config file
-			log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s \n", err))
+			log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s", err))
 		}
 	}
 
@@ -49,7 +53,7 @@ func main() {
 
 		err := os.Setenv("PLM_STATS_PREFIX", "myapp")
 		if err != nil { // Handle errors reading the config file
-			log.Error(fmt.Errorf("can not set env var gpe_stats_prefix: %s \n", err))
+			log.Error(fmt.Errorf("can not set env var gpe_stats_prefix: %s", err))
 		}
 	}
 
@@ -58,12 +62,12 @@ func main() {
 	config.SetEnvPrefix("PLM")
 	err := config.BindEnv("stats_path")
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
+		log.Error(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
 	err = config.BindEnv("stats_prefix")
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
+		log.Error(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
 	router.GET("/", func(c *gin.Context) {
@@ -108,6 +112,11 @@ func metricsHandler(c *gin.Context) {
 	c.String(http.StatusOK, stats)
 }
 
+// GetStats read a directory from config
+// find all files and folders
+// make stat name from PLM_PREFIX variable and relative dir path
+// to PLM_STATS_PATH and filename
+// get metric from file content
 func GetStats() (string, error) {
 
 	statsPath := config.GetString("stats_path")
@@ -115,18 +124,16 @@ func GetStats() (string, error) {
 
 	log.Debug("Stats directory: ", statsPath)
 
-	var returnErr error
-
 	var sb strings.Builder
 	walkErr := filepath.Walk(statsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			returnErr = err
+			return err
 		}
 		// get relative path to stats dir
-		relPath, relErr := filepath.Rel(statsPath, path)
+		relPath, err := filepath.Rel(statsPath, path)
 
-		if relErr != nil {
-			returnErr = relErr
+		if err != nil {
+			return err
 		}
 
 		// replace / with _
@@ -148,10 +155,8 @@ func GetStats() (string, error) {
 	})
 
 	if walkErr != nil {
-		returnErr = walkErr
-		result, err := fmt.Fprintf(os.Stderr, "walk failed with error: %v\n", walkErr)
-		log.Error(result, err)
+		log.Error("walk failed with error:", walkErr)
 	}
 
-	return sb.String(), returnErr
+	return sb.String(), walkErr
 }

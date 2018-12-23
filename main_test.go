@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func PrepareStats(tmpDir string) {
@@ -17,12 +18,12 @@ func PrepareStats(tmpDir string) {
 
 	err := os.MkdirAll(path.Join(tmpDir, "stats", "some"), os.ModePerm)
 	if err != nil {
-		log.Error(fmt.Errorf("can not create test path: %s \n", err))
+		log.Error(fmt.Errorf("can not create test path: %s", err))
 	}
 
 	err = os.MkdirAll(path.Join(tmpDir, "stats", "timers"), os.ModePerm)
 	if err != nil {
-		log.Error(fmt.Errorf("can not create test path: %s \n", err))
+		log.Error(fmt.Errorf("can not create test path: %s", err))
 	}
 
 	stat1Data := []byte("100")
@@ -70,40 +71,40 @@ func TearDownStats(tmpDir string) {
 
 	err := os.RemoveAll(path.Join(tmpDir, "stats"))
 	if err != nil {
-		log.Error(fmt.Errorf("can not create test path: %s \n", err))
+		log.Error(fmt.Errorf("can not create test path: %s", err))
 	}
 }
 
 func TestGetStats(t *testing.T) {
 	config = viper.New()
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(logrus.DebugLevel)
 
 	tmpDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		log.Error(fmt.Errorf("can not remove test path: %s \n", err))
+		log.Error(fmt.Errorf("can not remove test path: %s", err))
 	}
 
 	PrepareStats(tmpDir)
 
 	err = os.Setenv("PLM_STATS_PATH", path.Join(tmpDir, "stats"))
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s \n", err))
+		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s", err))
 	}
 
 	err = os.Setenv("PLM_STATS_PREFIX", "myapp")
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s \n", err))
+		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s", err))
 	}
 
 	config.SetEnvPrefix("PLM")
 	err = config.BindEnv("stats_path")
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
+		log.Error(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
 	err = config.BindEnv("stats_prefix")
 	if err != nil { // Handle errors reading the config file
-		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
+		log.Error(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
 	result, err := GetStats()
