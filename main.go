@@ -71,7 +71,7 @@ func main() {
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	log.Println("Shutdown Server ...")
@@ -98,13 +98,20 @@ func GetStats() (string, error) {
 
 	log.Debug("Stats directory: ", statsPath)
 
+	var returnErr error
+
 	var sb strings.Builder
-	err := filepath.Walk(statsPath, func(path string, info os.FileInfo, err error) error {
+	walkErr := filepath.Walk(statsPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			returnErr = err
 		}
 		// get relative path to stats dir
-		relPath, err := filepath.Rel(statsPath, path)
+		relPath, relErr := filepath.Rel(statsPath, path)
+
+		if relErr != nil {
+			returnErr = relErr
+		}
+
 		// replace / with _
 		var underscorePath = strings.Replace(relPath, "/", "_", -1)
 		if !info.IsDir() {
@@ -122,10 +129,11 @@ func GetStats() (string, error) {
 		return nil
 	})
 
-	if err != nil {
-		result, err := fmt.Fprintf(os.Stderr, "walk failed with error: %v\n", err)
+	if walkErr != nil {
+		returnErr = walkErr
+		result, err := fmt.Fprintf(os.Stderr, "walk failed with error: %v\n", walkErr)
 		log.Error(result, err)
 	}
 
-	return sb.String(), err
+	return sb.String(), returnErr
 }

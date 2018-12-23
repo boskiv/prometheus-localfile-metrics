@@ -14,8 +14,8 @@ import (
 
 func PrepareStats(tmpDir string) {
 	log.Debug("Creating stats dir")
-	var err error
-	err = os.MkdirAll(path.Join(tmpDir, "stats", "some"), os.ModePerm)
+
+	err := os.MkdirAll(path.Join(tmpDir, "stats", "some"), os.ModePerm)
 	if err != nil {
 		log.Error(fmt.Errorf("can not create test path: %s \n", err))
 	}
@@ -68,12 +68,7 @@ func PrepareStats(tmpDir string) {
 func TearDownStats(tmpDir string) {
 	log.Debug("Clearing up stats dir")
 
-	tmpDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		log.Error(fmt.Errorf("can not remove test path: %s \n", err))
-	}
-
-	err = os.RemoveAll(path.Join(tmpDir, "stats"))
+	err := os.RemoveAll(path.Join(tmpDir, "stats"))
 	if err != nil {
 		log.Error(fmt.Errorf("can not create test path: %s \n", err))
 	}
