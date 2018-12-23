@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +18,12 @@ import (
 )
 
 var config *viper.Viper
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
 
 func main() {
 	log.SetLevel(log.InfoLevel)
@@ -78,13 +85,16 @@ func main() {
 }
 
 func metricsHandler(c *gin.Context) {
-	c.String(http.StatusOK, GetStats())
+	stats, err := GetStats()
+	if err != nil {
+		log.Debug(fmt.Errorf("something goes wrong: %s", err))
+	}
+	c.String(http.StatusOK, stats)
 }
 
-func GetStats() string {
+func GetStats() (string, error) {
 
 	statsPath := config.GetString("stats_path")
-
 
 	log.Debug("Stats directory: ", statsPath)
 
@@ -94,13 +104,18 @@ func GetStats() string {
 			return err
 		}
 		// get relative path to stats dir
-		relPath, err := filepath.Rel(statsPath,path)
+		relPath, err := filepath.Rel(statsPath, path)
 		// replace / with _
 		var underscorePath = strings.Replace(relPath, "/", "_", -1)
-		if ! info.IsDir() {
+		if !info.IsDir() {
+			dat, err := ioutil.ReadFile(path)
+			check(err)
+
 			log.Debug("path:", path, "FileInfo.Name:", info.Name(), "Dir:", underscorePath)
 			sb.WriteString("gateway_")
 			sb.WriteString(underscorePath)
+			sb.WriteString(" ")
+			sb.WriteString(string(dat))
 			sb.WriteString("\n")
 		}
 
@@ -109,8 +124,8 @@ func GetStats() string {
 
 	if err != nil {
 		result, err := fmt.Fprintf(os.Stderr, "walk failed with error: %v\n", err)
-		log.Fatal(result, err)
+		log.Error(result, err)
 	}
 
-	return sb.String()
+	return sb.String(), err
 }
