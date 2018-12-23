@@ -16,4 +16,19 @@ before_script:
 script:
   - golangci-lint run       # run a bunch of code checkers/linters in parallel
   - go test -v -race ./...  # Run all the tests with the race detector enabled
-  - go build
+
+jobs:
+  include:
+    - stage: release tagged version
+      if: tag IS present
+      script:
+        - echo "Travis tag $TRAVIS_TAG"
+        - export ALIAS=`echo $TRAVIS_COMMIT | cut -c 1-7`
+        - export TAG=`echo $TRAVIS_TAG | sed 's/\./-/g' | sed 's/.*/v&/'`
+        # Build and release to Docker Hub
+        - docker login -u $DOCKER_USER -p $DOCKER_PASS
+        - export REPO=$DOCKER_REPO
+        - docker build -f Dockerfile -t $REPO:$TRAVIS_TAG .
+        - docker tag $REPO:$TRAVIS_TAG $REPO:latest
+        - docker push $REPO:$TRAVIS_TAG
+        - docker push $REPO
