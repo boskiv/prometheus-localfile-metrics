@@ -85,13 +85,23 @@ func TestGetStats(t *testing.T) {
 
 	PrepareStats(tmpDir)
 
-	err = os.Setenv("GPE_STATS_PATH", path.Join(tmpDir, "stats"))
+	err = os.Setenv("PLM_STATS_PATH", path.Join(tmpDir, "stats"))
 	if err != nil { // Handle errors reading the config file
 		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s \n", err))
 	}
 
-	config.SetEnvPrefix("GPE")
+	err = os.Setenv("PLM_STATS_PREFIX", "myapp")
+	if err != nil { // Handle errors reading the config file
+		log.Error(fmt.Errorf("can not set env var gpe_stats_path: %s \n", err))
+	}
+
+	config.SetEnvPrefix("PLM")
 	err = config.BindEnv("stats_path")
+	if err != nil { // Handle errors reading the config file
+		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+
+	err = config.BindEnv("stats_prefix")
 	if err != nil { // Handle errors reading the config file
 		log.Error(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
@@ -104,19 +114,19 @@ func TestGetStats(t *testing.T) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("gateway_some_some_1 100\n")
-	sb.WriteString("gateway_some_some_2 100\n")
-	sb.WriteString("gateway_some_some_3 100\n")
-	sb.WriteString("gateway_stat_1 100\n")
-	sb.WriteString("gateway_stat_2 100\n")
-	sb.WriteString("gateway_stat_3 100\n")
-	sb.WriteString("gateway_timers_timer_1 100\n")
-	sb.WriteString("gateway_timers_timer_2 100\n")
-	sb.WriteString("gateway_timers_timer_3 100\n")
+	sb.WriteString("myapp_some_some_1 100\n")
+	sb.WriteString("myapp_some_some_2 100\n")
+	sb.WriteString("myapp_some_some_3 100\n")
+	sb.WriteString("myapp_stat_1 100\n")
+	sb.WriteString("myapp_stat_2 100\n")
+	sb.WriteString("myapp_stat_3 100\n")
+	sb.WriteString("myapp_timers_timer_1 100\n")
+	sb.WriteString("myapp_timers_timer_2 100\n")
+	sb.WriteString("myapp_timers_timer_3 100\n")
 
 	log.Debug(result)
 	if result != sb.String() {
-		t.Error("String should pass template empty")
+		t.Error("String should pass template:\n", sb.String(), "*** not equal ***\n", result)
 	}
 
 	TearDownStats(tmpDir)
