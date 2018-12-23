@@ -1,6 +1,8 @@
 # prometheus-localfile-metrics
 [![Build Status](https://travis-ci.org/boskiv/prometheus-localfile-metrics.svg?branch=master)](https://travis-ci.org/boskiv/prometheus-localfile-metrics)
 
+Docker image: `boskiv/prometheus-localfile-metrics:0.1.0`
+
 # What is PLM
 
 `PLM stands for Prometheus Localfile Metrics`
@@ -55,6 +57,10 @@ cat cps
 ```
 
 next you run pod with:
+
+alpine container will write random numbers from 1 to 100 in file named check
+
+ 
 ```yml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -73,11 +79,14 @@ spec:
           emptyDir: {}
       containers:
         - name: yourcontainer
-          image: 
+          image: alpine
+          command: ["/bin/sh"]
+          args: ["-c", "mkdir -p /app/stats;  while true; do sleep 2; shuf -i 1-100 -n 1 > /app/stats/check; cat /app/stats/check; done"] 
           volumeMounts:
           - mountPath: /app/stats
             name: metrics-data
         - name: stats
+          image: boskiv/prometheus-localfile-metrics
           env:
           - name: PLM_STATS_PATH
             value: "/app/stats"
@@ -135,10 +144,8 @@ spec:
 
 After this prometheus exporter installed with prometheus operator for example, aome and get your stats with get request on `/metrics` endpoint
 
-Example respone will be
+Example response will be
 ```
 ➜  ~ curl localhost:9102/metrics
-myapp_ccu 100
-myapp_cps 200
-myapp_rps 300
+myapp_check 66
 ```
