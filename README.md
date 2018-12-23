@@ -91,7 +91,7 @@ spec:
 ``` 
 
 and Service
-```
+```yml
 apiVersion: v1
 kind: Service
 metadata:
@@ -111,7 +111,7 @@ spec:
 ```
 
 May be you need also ServiceMonitor
-```
+```yml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
