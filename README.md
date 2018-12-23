@@ -1,7 +1,7 @@
 # prometheus-localfile-metrics
 [![Build Status](https://travis-ci.org/boskiv/prometheus-localfile-metrics.svg?branch=master)](https://travis-ci.org/boskiv/prometheus-localfile-metrics)
 
-Docker image: `boskiv/prometheus-localfile-metrics:0.1.0`
+Docker image: `boskiv/prometheus-localfile-metrics`
 
 # What is PLM
 
