@@ -8,10 +8,18 @@ Docker image: `boskiv/prometheus-localfile-metrics`
 `PLM stands for Prometheus Localfile Metrics`
 
 # How it works
+
+Monitored application periodically writes metric to files, with one metric per file.
+Files are written to a volume (eg emptyDir) shared between the monitored application and the exporter (eg sidecar pattern).
+When `/metrics` is requested,
+the exporter walks the files and produces metrics, with
+each metric name derived from the file path and
+each metric value directly read from the file content.
+
 - App scan directory in `PLM_STATS_PATH` recursively
 - find all files and folders
 - make stat name from `PLM_PREFIX` variable and relative dir path to `PLM_STATS_PATH` and filename
-- get metric from file content
+- get metric value from file content (eg `100`)
 - listen 9102 port and endpoint /metric for prometheus request
 - response with string, separated with `\n`
 ```
@@ -34,4 +42,4 @@ helm install coreos/kube-prometheus --name kube-prometheus --namespace monitorin
 
 ## Example
 
-Look at example/README.md
+Look at [example/README.md](example/README.md)
